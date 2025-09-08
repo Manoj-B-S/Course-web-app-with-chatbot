@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Student Feedback - Iron Lady{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Feedback Form -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-comment-alt me-2"></i>Submit Feedback</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Your Name *</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address *</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="course" class="form-label">Course *</label>
+                            <select class="form-select" id="course" name="course" required>
+                                <option value="">Select Course</option>
+                                {% for course in courses %}
+                                <option value="{{ course.title }}">{{ course.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="rating" class="form-label">Rating *</label>
+                            <select class="form-select" id="rating" name="rating" required>
+                                <option value="">Select Rating</option>
+                                <option value="5">⭐⭐⭐⭐⭐ Excellent (5)</option>
+                                <option value="4">⭐⭐⭐⭐ Very Good (4)</option>
+                                <option value="3">⭐⭐⭐ Good (3)</option>
+                                <option value="2">⭐⭐ Fair (2)</option>
+                                <option value="1">⭐ Poor (1)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="feedback" class="form-label">Your Feedback *</label>
+                            <textarea class="form-control" id="feedback" name="feedback" rows="4" 
+                                      placeholder="Share your experience with the program..." required></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-paper-plane me-2"></i>Submit Feedback
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Feedback Summary -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3><i class="fas fa-chart-line me-2"></i>AI Feedback Summary</h3>
+                    <button class="btn btn-outline-primary btn-sm" onclick="getFeedbackSummary()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="summary-loading" class="text-center" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Analyzing feedback...</p>
+                    </div>
+                    <div id="summary-content">
+                        <p class="text-muted">Click refresh to generate an AI-powered summary of all feedback.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Feedback -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-comments me-2"></i>Recent Feedback</h3>
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    {% for fb in feedback[-5:] %}
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ fb.name }}</h6>
+                                <small class="text-muted">{{ fb.course }}</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="text-warning">
+                                    {% for i in range(fb.rating) %}⭐{% endfor %}
+                                </div>
+                                <small class="text-muted">{{ fb.created_at }}</small>
+                            </div>
+                        </div>
+                        <p class="mt-2 mb-0">{{ fb.feedback }}</p>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if not feedback %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-comment-slash fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No feedback submitted yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function getFeedbackSummary() {
+    document.getElementById('summary-loading').style.display = 'block';
+    document.getElementById('summary-content').style.display = 'none';
+    
+    fetch('/api/feedback-summary')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('summary-loading').style.display = 'none';
+            document.getElementById('summary-content').style.display = 'block';
+            document.getElementById('summary-content').innerHTML = 
+                `<div class="alert alert-info"><i class="fas fa-robot me-2"></i>${data.summary}</div>`;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('summary-loading').style.display = 'none';
+            document.getElementById('summary-content').style.display = 'block';
+            document.getElementById('summary-content').innerHTML = 
+                '<div class="alert alert-danger">Failed to generate summary. Please try again.</div>';
+        });
+}
+</script>
+{% endblock %}

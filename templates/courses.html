@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Course Management - Iron Lady{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-graduation-cap me-3"></i>Course Management</h1>
+        <div>
+            <button class="btn btn-outline-primary me-2" onclick="getSuggestions()">
+                <i class="fas fa-lightbulb me-2"></i>AI Suggestions
+            </button>
+            <a href="{{ url_for('add_course') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Add New Course
+            </a>
+        </div>
+    </div>
+
+    <!-- AI Suggestions Modal -->
+    <div class="modal fade" id="suggestionsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-robot me-2"></i>AI Course Suggestions
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="suggestions-loading" class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Generating course suggestions...</p>
+                    </div>
+                    <div id="suggestions-content" style="display: none;">
+                        <p class="text-muted">Here are some AI-generated course ideas:</p>
+                        <ul id="suggestions-list" class="list-group list-group-flush">
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Courses Grid -->
+    <div class="row">
+        {% for course in courses %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <span class="badge bg-primary">{{ course.category }}</span>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('edit_course', course_id=course.id) }}">
+                                        <i class="fas fa-edit me-2"></i>Edit
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="{{ url_for('delete_course', course_id=course.id) }}" 
+                                       onclick="return confirm('Are you sure you want to delete this course?')">
+                                        <i class="fas fa-trash me-2"></i>Delete
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <h5 class="card-title">{{ course.title }}</h5>
+                    <p class="card-text">{{ course.description }}</p>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <small class="text-muted">Duration</small>
+                            <div class="fw-bold">{{ course.duration }}</div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Format</small>
+                            <div class="fw-bold">{{ course.format }}</div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="h5 text-primary mb-0">{{ course.price }}</span>
+                        <small class="text-muted">{{ course.created_at }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not courses %}
+    <div class="text-center py-5">
+        <div class="feature-icon mb-3">
+            <i class="fas fa-graduation-cap"></i>
+        </div>
+        <h3>No Courses Available</h3>
+        <p class="text-muted">Start by adding your first course to the system.</p>
+        <a href="{{ url_for('add_course') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Add First Course
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function getSuggestions() {
+    const modal = new bootstrap.Modal(document.getElementById('suggestionsModal'));
+    modal.show();
+    
+    document.getElementById('suggestions-loading').style.display = 'block';
+    document.getElementById('suggestions-content').style.display = 'none';
+    
+    fetch('/api/suggestions')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('suggestions-loading').style.display = 'none';
+            document.getElementById('suggestions-content').style.display = 'block';
+            
+            const list = document.getElementById('suggestions-list');
+            list.innerHTML = '';
+            
+            data.suggestions.forEach(suggestion => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                li.innerHTML = `
+                    <span>${suggestion}</span>
+                    <i class="fas fa-lightbulb text-warning"></i>
+                `;
+                list.appendChild(li);
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('suggestions-loading').innerHTML = 
+                '<p class="text-danger">Failed to load suggestions. Please try again.</p>';
+        });
+}
+</script>
+{% endblock %}
